@@ -1,0 +1,132 @@
+{
+	"dataflows": [
+		{
+			"name": "motor-ingestion",
+			"sources": [
+				{
+					"name": "policy_inputs",
+					"path": "Data/motor_policies.json",
+					"format": "JSON"
+				}
+			],
+			"transformations": [
+				{
+					"name": "normalize_policy_fields",
+					"type": "normalize_fields",
+					"params": {
+						"input": "policy_inputs",
+						"output": "policy_standardized",
+						"fields": [
+							{
+								"name": "policy_number",
+								"sources": ["policy_number"]
+							},
+							{
+								"name": "driver_age",
+								"sources": ["driver_age", "driver.age"]
+							},
+							{
+								"name": "plate_number",
+								"sources": [
+									"plate_number",
+									"vehicle.plate",
+									"vehicle_plate"
+								]
+							},
+							{
+								"name": "policy_start_date",
+								"sources": [
+									"policy_start_date",
+									"policy.start",
+									"start_date"
+								]
+							},
+							{
+								"name": "policy_end_date",
+								"sources": [
+									"policy_end_date",
+									"policy.end",
+									"end_date"
+								]
+							},
+							{
+								"name": "vehicle_plate",
+								"sources": ["vehicle_plate", "vehicle.plate"]
+							},
+							{
+								"name": "vehicle_year",
+								"sources": ["vehicle.year"]
+							}
+						]
+					}
+				},
+				{
+					"name": "cleanup_raw_structs",
+					"type": "drop_columns",
+					"params": {
+						"input": "policy_standardized",
+						"output": "policy_standardized",
+						"columns": ["driver", "vehicle", "policy"]
+					}
+				},
+				{
+					"name": "add_ingestion_metadata",
+					"type": "add_fields",
+					"params": {
+						"input": "policy_standardized",
+						"output": "policy_with_ingestion",
+						"fields": [
+							{
+								"name": "ingestion_dt",
+								"function": "current_timestamp"
+							}
+						]
+					}
+				},
+				{
+					"name": "validation",
+					"type": "validate_fields",
+					"params": {
+						"input": "policy_with_ingestion",
+						"validations": [
+							{
+								"field": "plate_number",
+								"validations": ["notEmpty"]
+							},
+							{
+								"field": "driver_age",
+								"validations": ["notNull", "isNumeric", "min:18", "max:100"]
+							},
+							{
+								"field": "policy_start_date",
+								"validations": ["isDate", "dateBefore:policy_end_date"]
+							},
+							{
+								"field": "policy_end_date",
+								"validations": ["isDate"]
+							}
+						],
+						"ok_output": "validation_ok",
+						"ko_output": "validation_ko"
+					}
+				}
+			],
+			"sinks": [
+				{
+					"input": "validation_ok",
+					"name": "raw-ok",
+					"paths": ["Data/output/events/motor_policy"],
+					"format": "JSON",
+					"saveMode": "OVERWRITE"
+				},
+				{
+					"input": "validation_ko",
+					"name": "raw-ko",
+					"paths": ["Data/output/discards/motor_policy"],
+					"format": "JSON",
+					"saveMode": "OVERWRITE"
+				}
+			]
+		}
+	]
+}

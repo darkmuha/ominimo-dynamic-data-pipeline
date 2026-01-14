@@ -1,0 +1,10 @@
+{"policy_number":"P-20001","driver_age":36,"plate_number":"ABC-111","policy_start_date":"2024-01-01","policy_end_date":"2025-01-01"}
+{"policy_number":"P-20002","driver":{"age":45},"vehicle":{"plate":"XYZ-222"},"policy":{"start":"2024-03-01","end":"2025-03-01"}}
+{"policy_number":"P-20003","driver_age":"29","plate_number":"ABC-333","policy_start_date":"2024-02-01"}
+{"policy_number":"P-20004","plate_number":"XYZ-444","policy_end_date":"2025-01-01"}
+{"policy_number":"P-20005","driver_age":17,"plate_number":"","policy_start_date":"2024-06-01","policy_end_date":"2025-06-01","extra_field":"unexpected"}
+{"policy_number":"P-20006","driver_age":42,"vehicle":{"plate":"ABC-666","year":2019},"policy_start_date":"2024-01-01","policy_end_date":"2023-12-31"}
+{"policy_number":"P-20007","driver_age":null,"plate_number":"XYZ-777","policy":{"start":"2024-05-01","end":"2026-05-01"}}
+{"policy_number":"P-20008","driver_age":31,"plate_number":"ABC-888","policy_start_date":"2024-07-01","policy_end_date":"2025-07-01"}
+{"policy_number":"P-20009","driver_age":55,"plate_number":"ABC-999","policy_start_date":"invalid-date","policy_end_date":"2025-01-01"}
+{"policy_number":"P-20010","policy_number_legacy":"LEG-001","driver":{"age":39},"vehicle_plate":"XYZ-000","start_date":"2024-01-01","end_date":"2025-01-01"}
