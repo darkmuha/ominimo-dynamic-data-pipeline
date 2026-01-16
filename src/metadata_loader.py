@@ -2,6 +2,10 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from src.logger import get_logger
+
+logger = get_logger()
+
 
 def load_metadata(path: str) -> Dict[str, Any]:
     """
@@ -12,8 +16,9 @@ def load_metadata(path: str) -> Dict[str, Any]:
     """
     metadata_path = Path(path)
     if not metadata_path.is_file():
+        logger.error(f"Metadata file not found: {metadata_path}")
         raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
 
     with metadata_path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
+        metadata = json.load(f)
+    return metadata

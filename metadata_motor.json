@@ -109,6 +109,19 @@
 						"ok_output": "validation_ok",
 						"ko_output": "validation_ko"
 					}
+				},
+				{
+					"name": "global_stats",
+					"type": "compute_stats",
+					"params": {
+						"input": "policy_with_ingestion",
+						"name": "global_stats",
+						"fields": ["policy_number", "driver_age", "plate_number", "policy_start_date", "policy_end_date"],
+						"include_validation_stats": true,
+						"ok_input": "validation_ok",
+						"ko_input": "validation_ko",
+						"output_path": "Data/output/stats"
+					}
 				}
 			],
 			"sinks": [
@@ -124,6 +137,88 @@
 					"name": "raw-ko",
 					"paths": ["Data/output/discards/motor_policy"],
 					"format": "JSON",
+					"saveMode": "OVERWRITE"
+				}
+			]
+		},
+		{
+			"name": "motor-ingestion-csv",
+			"sources": [
+				{
+					"name": "policy_inputs",
+					"path": "Data/motor_policies.csv",
+					"format": "CSV"
+				}
+			],
+			"transformations": [
+				{
+					"name": "add_ingestion_metadata",
+					"type": "add_fields",
+					"params": {
+						"input": "policy_inputs",
+						"output": "policy_with_ingestion",
+						"fields": [
+							{
+								"name": "ingestion_dt",
+								"function": "current_timestamp"
+							}
+						]
+					}
+				},
+				{
+					"name": "validation",
+					"type": "validate_fields",
+					"params": {
+						"input": "policy_with_ingestion",
+						"validations": [
+							{
+								"field": "plate_number",
+								"validations": ["notEmpty"]
+							},
+							{
+								"field": "driver_age",
+								"validations": ["notNull", "isNumeric", "min:18", "max:100"]
+							},
+							{
+								"field": "policy_start_date",
+								"validations": ["isDate", "dateBefore:policy_end_date"]
+							},
+							{
+								"field": "policy_end_date",
+								"validations": ["isDate"]
+							}
+						],
+						"ok_output": "validation_ok",
+						"ko_output": "validation_ko"
+					}
+				},
+				{
+					"name": "global_stats",
+					"type": "compute_stats",
+					"params": {
+						"input": "policy_with_ingestion",
+						"name": "global_stats_csv",
+						"fields": ["policy_number", "driver_age", "plate_number", "policy_start_date", "policy_end_date"],
+						"include_validation_stats": true,
+						"ok_input": "validation_ok",
+						"ko_input": "validation_ko",
+						"output_path": "Data/output/stats"
+					}
+				}
+			],
+			"sinks": [
+				{
+					"input": "validation_ok",
+					"name": "raw-ok",
+					"paths": ["Data/output/events/motor_policy_csv"],
+					"format": "CSV",
+					"saveMode": "OVERWRITE"
+				},
+				{
+					"input": "validation_ko",
+					"name": "raw-ko",
+					"paths": ["Data/output/discards/motor_policy_csv"],
+					"format": "CSV",
 					"saveMode": "OVERWRITE"
 				}
 			]

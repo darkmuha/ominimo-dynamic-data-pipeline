@@ -2,6 +2,10 @@ from typing import Dict
 
 from pyspark.sql import DataFrame, SparkSession
 
+from src.logger import get_logger
+
+logger = get_logger()
+
 
 def read_sources(spark: SparkSession, dataflow_meta: dict) -> Dict[str, DataFrame]:
     """
@@ -25,9 +29,9 @@ def read_sources(spark: SparkSession, dataflow_meta: dict) -> Dict[str, DataFram
         elif fmt == "csv":
             df = reader.option("header", True).csv(path)
         else:
+            logger.error(f"Unsupported source format: {fmt!r} for source {name!r}")
             raise ValueError(f"Unsupported source format: {fmt!r} for source {name!r}")
 
         sources[name] = df
 
     return sources
-

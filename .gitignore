@@ -26,6 +26,7 @@ spark-warehouse/
 data/output/
 data/tmp/
 output/
+Data/output/
 
 # Docker
 .docker/

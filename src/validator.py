@@ -4,14 +4,16 @@ from typing import Dict, List, Tuple
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import (
     array,
-    array_remove,
     col,
     expr,
     lit,
-    size,
     try_to_date,
     when,
 )
+
+from src.logger import get_logger
+
+logger = get_logger()
 
 
 def _build_check_condition(field: str, check: str, df: DataFrame = None):
@@ -113,6 +115,7 @@ def apply_validations(df: DataFrame, rules: List[Dict]) -> Tuple[DataFrame, Data
     :return: Tuple of (ok_df, ko_df) where ok_df contains records that passed all validations and ko_df contains records that failed at least one validation with a validation_errors array column
     """
     if not rules:
+        logger.warning("No validation rules provided")
         return df, df.limit(0)
 
     conditions = []
@@ -150,17 +153,10 @@ def apply_validations(df: DataFrame, rules: List[Dict]) -> Tuple[DataFrame, Data
                 errors_array,
             )
             .withColumn(
-                "validation_errors_temp",
-                array_remove(col("validation_errors_raw"), lit(None)),
-            )
-            .withColumn(
                 "validation_errors",
-                when(
-                    col("validation_errors_temp").isNull() | (size(col("validation_errors_temp")) == 0),
-                    array().cast("array<string>")
-                ).otherwise(col("validation_errors_temp"))
+                expr("filter(validation_errors_raw, x -> x is not null)"),
             )
-            .drop(*error_cols, "validation_errors_raw", "validation_errors_temp")
+            .drop(*error_cols, "validation_errors_raw")
         )
     else:
         df_with_errors = df_with_flag.withColumn(
