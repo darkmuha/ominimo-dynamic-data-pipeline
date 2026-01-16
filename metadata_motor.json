@@ -79,6 +79,10 @@
 							{
 								"name": "ingestion_dt",
 								"function": "current_timestamp"
+							},
+							{
+								"name": "risk_category",
+								"function": "risk_category"
 							}
 						]
 					}
@@ -161,6 +165,10 @@
 							{
 								"name": "ingestion_dt",
 								"function": "current_timestamp"
+							},
+							{
+								"name": "risk_category",
+								"function": "risk_category"
 							}
 						]
 					}

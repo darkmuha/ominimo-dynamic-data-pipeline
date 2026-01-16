@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import coalesce, col, current_timestamp
+from pyspark.sql.functions import coalesce, col, current_timestamp, expr, when
 
 from src.logger import get_logger
 from src.stats import (
@@ -64,12 +64,28 @@ def drop_columns(df: DataFrame, columns: List[str]) -> DataFrame:
     return df.drop(*columns)
 
 
+def _calculate_risk_category(age_col):
+    """
+    Calculates insurance risk category based on driver age.
+
+    :param age_col: Spark column expression for driver age
+    :return: Spark column expression with risk category values
+    """
+    return (
+        when(age_col.isNull(), "Unknown")
+        .when((age_col >= 18) & (age_col <= 25), "High Risk")
+        .when((age_col >= 26) & (age_col <= 65), "Standard Risk")
+        .when(age_col >= 66, "Medium Risk")
+        .otherwise("Unknown")
+    )
+
+
 def add_fields(df: DataFrame, fields: List[Dict]) -> DataFrame:
     """
     Adds or overrides simple metadata fields on the DataFrame.
 
     :param df: Input DataFrame
-    :param fields: List of field configuration dictionaries, each containing 'name' (target column name) and 'function' (supported function name like "current_timestamp")
+    :param fields: List of field configuration dictionaries, each containing 'name' (target column name) and 'function' (supported function name like "current_timestamp", "risk_category")
     :return: DataFrame with added metadata fields
     """
     result = df
@@ -80,6 +96,9 @@ def add_fields(df: DataFrame, fields: List[Dict]) -> DataFrame:
 
         if func == "current_timestamp":
             result = result.withColumn(name, current_timestamp())
+        elif func == "risk_category":
+            age_col = expr("try_cast(driver_age as int)")
+            result = result.withColumn(name, _calculate_risk_category(age_col))
         else:
             raise ValueError(
                 f"Unsupported add_fields function: {func!r} for field {name!r}"

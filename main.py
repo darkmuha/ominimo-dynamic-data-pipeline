@@ -125,6 +125,9 @@ def run_pipeline(input_path: str = None, dataflow_name: str = None) -> None:
         ok_df = frames["validation_ok"]
         ko_df = frames["validation_ko"]
 
+        ok_df.cache()
+        ko_df.cache()
+
         ok_count = ok_df.count()
         ko_count = ko_df.count()
         total_count = ok_count + ko_count
@@ -139,6 +142,9 @@ def run_pipeline(input_path: str = None, dataflow_name: str = None) -> None:
 
         _write_sinks(spark, dataflow, frames, project_root)
         logger.info("Pipeline execution completed successfully")
+
+        ok_df.unpersist()
+        ko_df.unpersist()
     except Exception as e:
         logger.error(f"Pipeline execution failed: {str(e)}", exc_info=True)
         raise

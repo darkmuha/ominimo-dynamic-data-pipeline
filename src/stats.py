@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import Dict, List
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, explode, max as spark_max, min as spark_min
+from pyspark.sql.functions import (
+    col,
+    count,
+    countDistinct,
+    explode,
+    max as spark_max,
+    min as spark_min,
+    when,
+)
 
 from src.logger import get_logger
 
@@ -19,10 +27,12 @@ def compute_field_stats(df: DataFrame, fields: List[str] = None) -> Dict:
     :param fields: List of field names to compute stats for. If None, computes for all columns
     :return: Dictionary containing global statistics
     """
+    df.cache()
     total_count = df.count()
 
     if total_count == 0:
         logger.warning("DataFrame is empty, returning empty statistics")
+        df.unpersist()
         return {"total_records": 0, "fields": {}}
 
     if fields is None:
@@ -34,34 +44,46 @@ def compute_field_stats(df: DataFrame, fields: List[str] = None) -> Dict:
         if field not in df.columns:
             continue
 
-        field_stats = {
-            "null_count": df.filter(col(field).isNull()).count(),
-            "non_null_count": df.filter(col(field).isNotNull()).count(),
-            "distinct_count": df.select(field).distinct().count(),
-        }
-
         field_type = dict(df.dtypes)[field]
 
+        agg_exprs = [
+            count(when(col(field).isNull(), 1)).alias("null_count"),
+            count(when(col(field).isNotNull(), 1)).alias("non_null_count"),
+            countDistinct(col(field)).alias("distinct_count"),
+        ]
+
         if field_type in ["int", "bigint", "double", "float", "decimal"]:
-            numeric_stats = df.select(
-                spark_min(col(field)).alias("min"),
-                spark_max(col(field)).alias("max"),
-            ).collect()[0]
-
-            field_stats["min"] = numeric_stats["min"]
-            field_stats["max"] = numeric_stats["max"]
-
+            agg_exprs.extend(
+                [
+                    spark_min(col(field)).alias("min"),
+                    spark_max(col(field)).alias("max"),
+                ]
+            )
         elif field_type in ["date", "timestamp"]:
-            date_stats = df.select(
-                spark_min(col(field)).alias("min"),
-                spark_max(col(field)).alias("max"),
-            ).collect()[0]
+            agg_exprs.extend(
+                [
+                    spark_min(col(field)).alias("min"),
+                    spark_max(col(field)).alias("max"),
+                ]
+            )
 
+        field_stats_row = df.agg(*agg_exprs).first()
+
+        field_stats = {
+            "null_count": field_stats_row["null_count"],
+            "non_null_count": field_stats_row["non_null_count"],
+            "distinct_count": field_stats_row["distinct_count"],
+        }
+
+        if field_type in ["int", "bigint", "double", "float", "decimal"]:
+            field_stats["min"] = field_stats_row["min"]
+            field_stats["max"] = field_stats_row["max"]
+        elif field_type in ["date", "timestamp"]:
             field_stats["min_date"] = (
-                str(date_stats["min"]) if date_stats["min"] else None
+                str(field_stats_row["min"]) if field_stats_row["min"] else None
             )
             field_stats["max_date"] = (
-                str(date_stats["max"]) if date_stats["max"] else None
+                str(field_stats_row["max"]) if field_stats_row["max"] else None
             )
 
         field_stats["null_percentage"] = (
@@ -70,6 +92,7 @@ def compute_field_stats(df: DataFrame, fields: List[str] = None) -> Dict:
 
         stats["fields"][field] = field_stats
 
+    df.unpersist()
     return stats
 
 
@@ -81,6 +104,9 @@ def compute_validation_stats(ok_df: DataFrame, ko_df: DataFrame) -> Dict:
     :param ko_df: DataFrame containing rejected records
     :return: Dictionary containing validation statistics
     """
+    ok_df.cache()
+    ko_df.cache()
+
     ok_count = ok_df.count()
     ko_count = ko_df.count()
     total_count = ok_count + ko_count
@@ -109,6 +135,9 @@ def compute_validation_stats(ok_df: DataFrame, ko_df: DataFrame) -> Dict:
         validation_stats["top_validation_errors"] = [
             {"error": row["error"], "count": row["count"]} for row in error_counts
         ]
+
+    ok_df.unpersist()
+    ko_df.unpersist()
 
     return validation_stats
 
