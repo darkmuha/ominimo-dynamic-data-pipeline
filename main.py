@@ -132,10 +132,14 @@ def run_pipeline(input_path: str = None, dataflow_name: str = None) -> None:
         ko_count = ko_df.count()
         total_count = ok_count + ko_count
 
-        logger.info(
-            f"Validation results: {ok_count} valid, {ko_count} rejected "
-            f"({(ok_count / total_count * 100):.2f}% pass rate)" if total_count > 0 else ""
-        )
+        if total_count > 0:
+            pass_rate = ok_count / total_count * 100
+            logger.info(
+                f"Validation results: {ok_count} valid, {ko_count} rejected "
+                f"({pass_rate:.2f}% pass rate)"
+            )
+        else:
+            logger.info("Validation results: 0 valid, 0 rejected")
 
         ok_df.show(truncate=False)
         ko_df.show(truncate=False)

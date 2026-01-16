@@ -1,16 +1,17 @@
 services:
-  motor-ingestion:
-    build: .
-    container_name: motor-ingestion-pipeline
-    volumes:
-      - ./Data:/app/Data
-      - ./metadata_motor.json:/app/metadata_motor.json
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: python main.py
-    networks:
-      - motor-network
+    motor-ingestion:
+        build: .
+        image: motor-ingestion-pipeline:latest
+        container_name: motor-ingestion-pipeline
+        volumes:
+            - ./Data:/app/Data
+            - ./metadata_motor.json:/app/metadata_motor.json
+        environment:
+            - PYTHONUNBUFFERED=1
+        command: python main.py
+        networks:
+            - motor-network
 
 networks:
-  motor-network:
-    driver: bridge
+    motor-network:
+        driver: bridge

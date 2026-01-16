@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import coalesce, col, current_timestamp, expr, when
+from pyspark.sql.functions import coalesce, col, current_timestamp
 from pyspark.sql.types import StructType
 
 from src.logger import get_logger
@@ -224,7 +224,7 @@ def normalize_fields(
 
 def drop_columns(df: DataFrame, columns: List[str]) -> DataFrame:
     """
-    Drops a list of columns from the DataFrame.
+    Drops a list of columns from the DataFrame. Only drops columns that actually exist.
 
     :param df: Input DataFrame
     :param columns: List of column names to drop
@@ -232,23 +232,39 @@ def drop_columns(df: DataFrame, columns: List[str]) -> DataFrame:
     """
     if not columns:
         return df
-    return df.drop(*columns)
+    
+    # Only drop columns that actually exist in the DataFrame
+    existing_columns = set(df.columns)
+    columns_to_drop = [col for col in columns if col in existing_columns]
+    
+    if not columns_to_drop:
+        return df
+    
+    logger.debug(f"Dropping columns: {columns_to_drop}")
+    return df.drop(*columns_to_drop)
 
 
-def _calculate_risk_category(age_col):
+def select_columns(df: DataFrame, columns: List[str]) -> DataFrame:
     """
-    Calculates insurance risk category based on driver age.
+    Selects only the specified columns from the DataFrame.
 
-    :param age_col: Spark column expression for driver age
-    :return: Spark column expression with risk category values
+    :param df: Input DataFrame
+    :param columns: List of column names to keep
+    :return: DataFrame with only the specified columns
     """
-    return (
-        when(age_col.isNull(), "Unknown")
-        .when((age_col >= 18) & (age_col <= 25), "High Risk")
-        .when((age_col >= 26) & (age_col <= 65), "Standard Risk")
-        .when(age_col >= 66, "Medium Risk")
-        .otherwise("Unknown")
-    )
+    if not columns:
+        return df
+    
+    # Only select columns that actually exist in the DataFrame
+    existing_columns = set(df.columns)
+    columns_to_select = [c for c in columns if c in existing_columns]
+    
+    if not columns_to_select:
+        logger.warning(f"None of the specified columns exist: {columns}")
+        return df
+    
+    logger.debug(f"Selecting columns: {columns_to_select}")
+    return df.select(*columns_to_select)
 
 
 def add_fields(df: DataFrame, fields: List[Dict]) -> DataFrame:
@@ -256,7 +272,7 @@ def add_fields(df: DataFrame, fields: List[Dict]) -> DataFrame:
     Adds or overrides simple metadata fields on the DataFrame.
 
     :param df: Input DataFrame
-    :param fields: List of field configuration dictionaries, each containing 'name' (target column name) and 'function' (supported function name like "current_timestamp", "risk_category")
+    :param fields: List of field configuration dictionaries, each containing 'name' (target column name) and 'function' (supported function name like "current_timestamp")
     :return: DataFrame with added metadata fields
     """
     result = df
@@ -267,9 +283,6 @@ def add_fields(df: DataFrame, fields: List[Dict]) -> DataFrame:
 
         if func == "current_timestamp":
             result = result.withColumn(name, current_timestamp())
-        elif func == "risk_category":
-            age_col = expr("try_cast(driver_age as int)")
-            result = result.withColumn(name, _calculate_risk_category(age_col))
         else:
             raise ValueError(
                 f"Unsupported add_fields function: {func!r} for field {name!r}"
@@ -310,6 +323,10 @@ def apply_transformations(
         elif t_type == "drop_columns":
             columns = params.get("columns", [])
             output_df = drop_columns(input_df, columns)
+            updated[output_name] = output_df
+        elif t_type == "select_columns":
+            columns = params.get("columns", [])
+            output_df = select_columns(input_df, columns)
             updated[output_name] = output_df
         elif t_type == "add_fields":
             fields = params.get("fields", [])

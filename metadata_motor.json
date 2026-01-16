@@ -49,41 +49,35 @@
 									"policy.end",
 									"end_date"
 								]
-							},
-							{
-								"name": "vehicle_plate",
-								"sources": ["vehicle_plate", "vehicle.plate"]
-							},
-							{
-								"name": "vehicle_year",
-								"sources": ["vehicle.year"]
 							}
 						]
 					}
 				},
 				{
-					"name": "cleanup_raw_structs",
-					"type": "drop_columns",
+					"name": "select_canonical_columns",
+					"type": "select_columns",
 					"params": {
 						"input": "policy_standardized",
-						"output": "policy_standardized",
-						"columns": ["driver", "vehicle", "policy"]
+						"output": "policy_cleaned",
+						"columns": [
+							"policy_number",
+							"driver_age",
+							"plate_number",
+							"policy_start_date",
+							"policy_end_date"
+						]
 					}
 				},
 				{
 					"name": "add_ingestion_metadata",
 					"type": "add_fields",
 					"params": {
-						"input": "policy_standardized",
+						"input": "policy_cleaned",
 						"output": "policy_with_ingestion",
 						"fields": [
 							{
 								"name": "ingestion_dt",
 								"function": "current_timestamp"
-							},
-							{
-								"name": "risk_category",
-								"function": "risk_category"
 							}
 						]
 					}
@@ -96,7 +90,10 @@
 						"validations": [
 							{
 								"field": "plate_number",
-								"validations": ["notEmpty"]
+								"validations": [
+									"notEmpty",
+									"pattern:^[A-Z]{3}-\\d{3}$"
+								]
 							},
 							{
 								"field": "driver_age",
@@ -180,10 +177,6 @@
 							{
 								"name": "ingestion_dt",
 								"function": "current_timestamp"
-							},
-							{
-								"name": "risk_category",
-								"function": "risk_category"
 							}
 						]
 					}
@@ -196,7 +189,10 @@
 						"validations": [
 							{
 								"field": "plate_number",
-								"validations": ["notEmpty"]
+								"validations": [
+									"notEmpty",
+									"pattern:^[A-Z]{3}-\\d{3}$"
+								]
 							},
 							{
 								"field": "driver_age",

@@ -27,7 +27,17 @@ def read_sources(spark: SparkSession, dataflow_meta: dict) -> Dict[str, DataFram
         if fmt == "json":
             df = reader.json(path)
         elif fmt == "csv":
-            df = reader.option("header", True).csv(path)
+            df = (
+                reader.format("csv")
+                .option("header", "true")
+                .option("inferSchema", "true")
+                .option("sep", ",")
+                .option("quote", '"')
+                .option("escape", '"')
+                .option("multiLine", "false")
+                .option("encoding", "UTF-8")
+                .load(path)
+            )
         else:
             logger.error(f"Unsupported source format: {fmt!r} for source {name!r}")
             raise ValueError(f"Unsupported source format: {fmt!r} for source {name!r}")

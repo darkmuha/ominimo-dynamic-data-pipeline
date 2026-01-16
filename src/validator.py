@@ -99,6 +99,10 @@ def _build_check_condition(field: str, check: str, df: DataFrame = None):
             )
         )
         label = f"{field}:must_be_after_{other_field}"
+    elif check.startswith("pattern:"):
+        pattern = check.split(":", 1)[1]
+        condition = col(field).isNull() | col(field).rlike(pattern)
+        label = f"{field}:must_match_pattern"
     else:
         condition = lit(True)
         label = f"{field}:unknown_validation_{check}"
@@ -163,7 +167,7 @@ def apply_validations(df: DataFrame, rules: List[Dict]) -> Tuple[DataFrame, Data
             "validation_errors", array().cast("array<string>")
         )
 
-    ok_df = df_with_errors.filter(col("is_valid") == True).drop("is_valid")
+    ok_df = df_with_errors.filter(col("is_valid") == True).drop("is_valid", "validation_errors")
     ko_df = df_with_errors.filter(col("is_valid") == False).drop("is_valid")
 
     return ok_df, ko_df

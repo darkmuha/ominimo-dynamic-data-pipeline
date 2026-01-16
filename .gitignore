@@ -22,11 +22,19 @@ spark-warehouse/
 *.log
 *.out
 
-# Data outputs [idk how it will be yet]
+# Data outputs
 data/output/
 data/tmp/
 output/
 Data/output/
+
+# Airflow auto-generated
+logs/*
+!logs/.gitkeep
+config/*
+!config/.gitkeep
+plugins/*
+!plugins/.gitkeep
 
 # Docker
 .docker/
