@@ -16,6 +16,7 @@
 					"params": {
 						"input": "policy_inputs",
 						"output": "policy_standardized",
+						"auto_flatten_naming": "snake_case",
 						"fields": [
 							{
 								"name": "policy_number",
@@ -23,7 +24,7 @@
 							},
 							{
 								"name": "driver_age",
-								"sources": ["driver_age", "driver.age"]
+								"sources": ["driver_age"]
 							},
 							{
 								"name": "plate_number",
@@ -99,11 +100,19 @@
 							},
 							{
 								"field": "driver_age",
-								"validations": ["notNull", "isNumeric", "min:18", "max:100"]
+								"validations": [
+									"notNull",
+									"isNumeric",
+									"min:18",
+									"max:100"
+								]
 							},
 							{
 								"field": "policy_start_date",
-								"validations": ["isDate", "dateBefore:policy_end_date"]
+								"validations": [
+									"isDate",
+									"dateBefore:policy_end_date"
+								]
 							},
 							{
 								"field": "policy_end_date",
@@ -120,7 +129,13 @@
 					"params": {
 						"input": "policy_with_ingestion",
 						"name": "global_stats",
-						"fields": ["policy_number", "driver_age", "plate_number", "policy_start_date", "policy_end_date"],
+						"fields": [
+							"policy_number",
+							"driver_age",
+							"plate_number",
+							"policy_start_date",
+							"policy_end_date"
+						],
 						"include_validation_stats": true,
 						"ok_input": "validation_ok",
 						"ko_input": "validation_ko",
@@ -185,11 +200,19 @@
 							},
 							{
 								"field": "driver_age",
-								"validations": ["notNull", "isNumeric", "min:18", "max:100"]
+								"validations": [
+									"notNull",
+									"isNumeric",
+									"min:18",
+									"max:100"
+								]
 							},
 							{
 								"field": "policy_start_date",
-								"validations": ["isDate", "dateBefore:policy_end_date"]
+								"validations": [
+									"isDate",
+									"dateBefore:policy_end_date"
+								]
 							},
 							{
 								"field": "policy_end_date",
@@ -206,7 +229,13 @@
 					"params": {
 						"input": "policy_with_ingestion",
 						"name": "global_stats_csv",
-						"fields": ["policy_number", "driver_age", "plate_number", "policy_start_date", "policy_end_date"],
+						"fields": [
+							"policy_number",
+							"driver_age",
+							"plate_number",
+							"policy_start_date",
+							"policy_end_date"
+						],
 						"include_validation_stats": true,
 						"ok_input": "validation_ok",
 						"ko_input": "validation_ko",
